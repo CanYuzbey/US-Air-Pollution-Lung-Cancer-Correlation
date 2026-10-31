@@ -1,249 +1,32 @@
-# DSA210 – Air Pollution (AQI) and Lung Cancer Incidence  
-**Exploratory Data Analysis and Correlation Study**
+# DSA210: AQI and illustrative lung cancer rates
 
-This project analyzes the relationship between **air pollution**, measured using **annual average Air Quality Index (AQI)**, and **lung cancer incidence rates** across selected U.S. states. The study follows a structured data science workflow including **data preprocessing**, **exploratory data analysis (EDA)**, and **statistical hypothesis testing**.
+This repository demonstrates a data analysis workflow that combines observed air-quality data with **illustrative, generated** lung-cancer-rate series. It is a software and methods exercise, not an empirical study of the relationship between air pollution and cancer incidence.
 
----
+## Data provenance
 
-## Research Question
+- **Air quality:** `scripts/fetch_real_data.py` downloads EPA daily county AQI files for 2010–2022 and aggregates the selected states' county readings to state-day means. The committed `data/air/` files appear to come from that process, but the repository has no source manifest that independently verifies them. A state-day mean of county AQI values should not be interpreted as population exposure.
+- **Cancer rates:** The same script's `generate_cdc_data()` function writes `data/cancer/` files from approximate state starting values, fixed yearly declines, and random noise. These values are **not observed CDC state-year incidence rates**. The script does not download CDC incidence files. The separate `scripts/generate_synthetic_data.py` can also generate synthetic air and cancer series.
+- The generation code does not set a random seed, so regenerated cancer values and downstream metrics may differ from the committed examples.
 
-**Is there a statistically significant relationship between annual average air pollution (AQI) and lung cancer incidence rates across U.S. states and years?**
+## What the project demonstrates
 
----
+The repository includes data loading and cleaning, exploratory plots, a Pearson correlation calculation, and a comparison of linear regression, random forest, and gradient boosting models with cross-validation. These tools illustrate an analysis workflow. The committed plots and metrics describe this mixed observed/generated dataset only.
 
-## Hypothesis
+## Interpretation limits
 
-- **H₀ (Null Hypothesis):** There is no statistically significant linear relationship between annual average AQI and lung cancer incidence rates (ρ = 0).
-- **H₁ (Alternative Hypothesis):** There is a statistically significant linear relationship between annual average AQI and lung cancer incidence rates (ρ ≠ 0).
+The reported correlation coefficient, p-value, feature importance, and predictive scores **cannot establish a real-world association or predictive relationship** between air pollution and lung cancer. In addition to the generated outcome variable, any future empirical study would need to address population exposure, smoking, age, occupational exposures, time lags, state-level aggregation, and source-specific data quality. No causal claim is supported here.
 
-Significance level: **α = 0.05**
+## Reproduce the workflow
 
----
-
-## Data Sources & Acquisition
- 
- The data in this repository is **real and historically accurate**, aggregated from official government sources:
- 
- 1.  **Air Quality Data (EPA)**:
-     *   **Source**: [EPA Air Data (Daily AQI by County)](https://aqs.epa.gov/aqsweb/airdata/download_files.html)
-     *   **Method**: `scripts/fetch_real_data.py` downloads daily summary archives (2010–2022) and aggregates county-level readings to a state-wide daily average.
-     *   **Files**: `data/air/Air.{State}.csv` contains over 4,700 daily records per state.
- 
- 2.  **Cancer Incidence Data (CDC)**:
-     *   **Source**: [CDC United States Cancer Statistics (USCS)](https://gis.cdc.gov/Cancer/USCS/)
-     *   **Method**: Rates are derived from official CDC Age-Adjusted Lung Cancer Incidence Reports (2010–2020 trends), reflecting the real-world decline in cancer rates (approx -2% annually) and state-specific baselines (e.g., KY/WV high, UT/CA low).
-     *   **Files**: `data/cancer/Cancer.{State}.csv`.
- 
- To reproduce the dataset from scratch, run:
- ```bash
- python scripts/fetch_real_data.py
- ```
-
----
-
-## Data Preprocessing
-
-Before analysis, several preprocessing steps were applied:
-
-- Column names were standardized and dates were parsed into year format
-- AQI values and cancer incidence rates were converted to numeric values
-- Rows with missing or invalid year/value entries were removed
-- Air quality data was aggregated into **annual average AQI**
-- Datasets were merged using **State** and **Year** as keys
-
-These steps ensured consistency and reliability before conducting exploratory and statistical analysis.
-
----
-
-## Exploratory Data Analysis (EDA)
-
-### Distribution of Annual Average AQI
-
-This histogram shows the distribution of annual average AQI values across all states and years. It provides an overview of pollution levels and helps identify variability and potential skewness.
-
-![Distribution of Annual Average AQI](figures/eda_hist_aqi.png)
-
-**Interpretation:**  
-Most AQI values fall within moderate ranges, while higher AQI values appear less frequently and are primarily associated with California.
-
----
-
-### Distribution of Lung Cancer Incidence Rate
-
-This histogram presents the distribution of lung cancer incidence rates (per 100,000 people) across the dataset, highlighting the spread and variability of cancer rates.
-
-![Distribution of Lung Cancer Incidence Rate](figures/eda_hist_cancer.png)
-
-**Interpretation:**  
-Cancer incidence rates vary considerably across states and years, with higher rates more common in densely populated regions.
-
----
-
-### AQI by State (Boxplot)
-
-This boxplot compares the distribution of annual average AQI values between states, highlighting differences in pollution levels and potential outliers.
-
-![AQI by State](figures/eda_box_aqi_by_state.png)
-
-**Interpretation:**  
-California shows consistently higher AQI values compared to Washington and New York, indicating relatively poorer air quality during the analyzed period.
-
----
-
-## Temporal Trends
-
-### Annual Average AQI Over Time
-
-This line plot shows how annual average AQI values change over time for each state, allowing comparison of pollution trends.
-
-![Annual Average AQI Over Time](figures/eda_line_aqi_over_time.png)
-
-**Interpretation:**  
-Washington and New York display relatively stable AQI trends, while California maintains higher pollution levels with noticeable year-to-year variation.
-
----
-
-### Lung Cancer Incidence Over Time
-
-This line plot illustrates lung cancer incidence rates over time for each state.
-
-![Lung Cancer Incidence Over Time](figures/eda_line_cancer_over_time.png)
-
-**Interpretation:**  
-All states show a general downward trend in lung cancer incidence, which may reflect long-term improvements in healthcare, reduced smoking rates, or reporting effects.
-
----
-
-## Relationship Between AQI and Lung Cancer Incidence
-
-### AQI vs Lung Cancer Incidence
-
-This scatter plot examines the relationship between annual average AQI and lung cancer incidence rates across states and years. A linear regression line is included to visualize the overall trend.
-
-![AQI vs Lung Cancer Incidence](figures/result_scatter_aqi_vs_cancer.png)
-
-**Statistical Result:**  
-- Pearson correlation coefficient: **r ≈ -0.70**  
-- p-value: **p ≈ 0.00038**
-
-**Interpretation:**  
-The pooled dataset shows a statistically significant negative linear association between AQI and lung cancer incidence rates. This relationship reflects differences between states rather than a causal effect.
-
----
-
-## State Selection Rationale
-
-These four states were specifically selected to represent distinct environmental, industrial, and demographic profiles, allowing for a multifaceted analysis of air pollution and health outcomes:
-
-*   **California (The "Valley & Fire" Profile)**:
-    *   **Environment**: Unique topography (e.g., Central Valley) that traps pollutants and a warm climate conducive to ozone formation. Frequent **wildfires** contribute significant seasonal particulate matter spikes.
-    *   **Pollution Sources**: Heavy focus on mobile sources (freight, ports) and agriculture.
-
-*   **Florida (The "Coastal & Demographic" Profile)**:
-    *   **Environment**: Peninsular geography allows for better pollution dispersion generally, but specific local sources exist.
-    *   **Demographics**: A significantly **older population** (retirement hub) provides a critical contrast, as age is a primary risk factor for lung cancer, potentially confounding pollution signals.
-    *   **Pollution Sources**: Power generation, phosphate industry, and agricultural burning.
-
-*   **New York (The "Urban Density" Profile)**:
-    *   **Environment**: Represents extreme **urban density** (NYC) contrasted with rural upstate areas.
-    *   **Pollution Sources**: High concentration of traffic emissions, building heating systems (oil/gas), and financial/service industry dominance rather than heavy manufacturing.
-
-*   **Washington (The "Wood Smoke & Tech" Profile)**:
-    *   **Environment**: Pacific Northwest climate with distinct seasonal pollution patterns.
-    *   **Pollution Sources**: Significant contribution from **residential wood heating** and seasonal wildfires, differing from the traffic-heavy pollution of NY or CA.
-    *   **Industry**: Tech and aerospace hubs offering a different socioeconomic backdrop compared to agricultural or financial centers.
-
----
-
-## Limitations
-
-This study is based on aggregated state-level data and therefore represents an **ecological analysis**. The findings do not imply causation and do not account for important confounding factors such as:
-
-- Smoking prevalence  
-- Occupational exposure  
-- Socioeconomic conditions  
-- Healthcare access  
-- Long latency periods associated with cancer development  
-
-Additionally, the limited number of states and years reduces generalizability.
-
----
-
-## Machine Learning Analysis
-
-The project implements a robust **Multi-Model Machine Learning Pipeline** to predict lung cancer rates based on air quality and location.
-
-### Models Comparison
-We evaluated the following models using **5-Fold Cross-Validation** to ensure reliability:
-1.  **Linear Regression**: Baseline model assuming linear relationships.
-2.  **Random Forest Regressor**: Ensemble method capturing non-linear patterns.
-3.  **Gradient Boosting Regressor**: Boosting method for predictive accuracy.
-
-### Key Outputs
-- **Model Comparison**: `figures/ml_model_comparison.png` visualizes the R2 scores across models.
-- **Feature Importance**: `figures/ml_feature_importance.png` shows which variables (AQI vs State) drive predictions (Random Forest).
-- **Residual Analysis**: `figures/ml_residuals.png` checks for systematic errors.
-
-The analysis script `ml_analysis.py` automatically trains these models and saves metrics to `figures/ml_metrics.csv`.
-
----
-
-## Project Structure
-
-```
-├── data/               # Data files (Official EPA/CDC aggregated data)
-├── figures/            # Generated plots and metrics
-├── src/                # Source code modules
-│   ├── loader.py       # Data loading utilities
-│   └── preprocessing.py # Data cleaning and transformation
-├── tests/              # Unit tests
-├── ml_analysis.py      # Main analysis script
-├── analysis.ipynb      # Exploratory Jupyter Notebook
-├── requirements.txt    # Project dependencies
-└── README.md           # Project documentation
-```
-
-
-
-## Installation
-
-1.  Clone the repository:
-    ```bash
-    git clone <repository-url>
-    cd US-Air-Pollution-Lung-Cancer-Correlation
-    ```
-
-2.  Create a virtual environment:
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows: venv\Scripts\activate
-    ```
-
-3.  Install dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-## Usage
-
-### Run the Analysis
-To execute the pipeline:
 ```bash
+python -m pip install -r requirements.txt
+python scripts/fetch_real_data.py
 python ml_analysis.py
-```
-
-### Run Tests
-```bash
 python -m unittest discover tests
 ```
 
+The first command after installation downloads EPA AQI data and regenerates the illustrative cancer series. It does not retrieve observed CDC cancer rates. The exploratory notebook and figures in this repository should be read with the same data-provenance limitation.
 
+## Next step for an empirical study
 
-
-
-
-  
-
-
-
-
+Obtain source-linked observed CDC state-year cancer incidence data with a documented license and extraction procedure. Replace the generated cancer CSV files, rerun the notebook, figures, statistics, and models, then review the study design before making any public-health inference.
